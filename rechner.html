@@ -26,6 +26,12 @@
       box-sizing: border-box;
     }
 
+    h1 {
+      margin-top: 0;
+      text-align: center;
+      color: #2c3e50;
+    }
+
     label {
       font-weight: bold;
       display: block;
@@ -71,7 +77,152 @@
 </head>
 <body>
   <div class="wrapper">
-    <!-- Dein bestehender Formularcode bleibt hier erhalten -->
+    <h1>Maurer-Schema Rechner</h1>
+    <label for="maxVisitors" title="Maximal zulässige Personenanzahl laut Behörde oder Fläche.">Maximale Besucherzahl</label>
+    <input type="number" id="maxVisitors" placeholder="z. B. 10000" required title="Maximale Personenanzahl auf dem Gelände">
+
+    <label for="expectedVisitors" title="Wie viele Besucher realistisch zu erwarten sind (nicht Einlassgrenze!)">Erwartete Besucherzahl</label>
+    <input type="number" id="expectedVisitors" placeholder="z. B. 8000" required title="Prognose: Wie viele kommen wirklich?">
+
+    <label for="eventType" title="Bestimmt den Wichtungsfaktor je nach Gefährdung durch Veranstaltungsart">Art der Veranstaltung</label>
+    <select id="eventType" title="Wird zur Berechnung der Gefahrneigung gewichtet">
+      <option value="0.3">Allgemeine Sportveranstaltung</option>
+      <option value="0.3">Ausstellung</option>
+      <option value="0.3">Basar</option>
+      <option value="0.8">Demonstration</option>
+      <option value="0.4">Feuerwerk</option>
+      <option value="0.3">Flohmarkt</option>
+      <option value="0.9">Flugveranstaltung</option>
+      <option value="0.7">Karnevalsveranstaltung</option>
+      <option value="0.7">Karnevalsumzug</option>
+      <option value="0.35">Kombi-Veranstaltung (Sport+Musik+Show)</option>
+      <option value="0.2">Konzert</option>
+      <option value="0.5">Kundgebung</option>
+      <option value="0.3">Langlauf</option>
+      <option value="0.3">Martinsumzug</option>
+      <option value="0.3">Messe</option>
+      <option value="0.8">Motorsportveranstaltung</option>
+      <option value="0.5">Musikveranstaltung</option>
+      <option value="0.2">Oper/Operette</option>
+      <option value="0.3">Radrennen</option>
+      <option value="0.1">Reitsportveranstaltung</option>
+      <option value="1.0">Rockkonzert</option>
+      <option value="1.2">Rockkonzert mit Boygroup</option>
+      <option value="0.2">Schauspiel/Theater</option>
+      <option value="0.5">Schützenfest</option>
+      <option value="0.2">Show</option>
+      <option value="0.4">Stadtteilfest</option>
+      <option value="0.4">Straßenfest</option>
+      <option value="0.3">Tanzsportveranstaltung</option>
+      <option value="0.4">Volksfest</option>
+      <option value="0.3">Weihnachtsmarkt</option>
+    </select>
+
+    <label for="vipCount" title="Personen mit Polizeischutz (z. B. Prominente, Politiker). Je 5 Personen = 10 Punkte.">Anzahl VIPs mit Polizeischutz</label>
+    <input type="number" id="vipCount" placeholder="z. B. 10" title="Je 5 VIPs = +10 Punkte (max. 30)">
+
+    <label for="violence" title="Liegt ein polizeilicher Hinweis auf Gewaltbereitschaft vor?">Erhöhte Gewaltbereitschaft?</label>
+    <select id="violence" title="+10 Punkte bei bekannter Gewaltgefahr laut Polizei">
+      <option value="0">Nein</option>
+      <option value="10">Ja (+10 Punkte)</option>
+    </select>
+
+    <button onclick="berechneMaurer()">Jetzt absenden</button>
+
+    <div id="result"></div>
   </div>
+  <script>
+function berechneMaurer() {
+  const maxVisitors = parseInt(document.getElementById('maxVisitors').value);
+  const expectedVisitors = parseInt(document.getElementById('expectedVisitors').value);
+  const eventType = parseFloat(document.getElementById('eventType').value);
+  const vipCount = parseInt(document.getElementById('vipCount').value);
+  const violence = parseInt(document.getElementById('violence').value);
+
+  if (isNaN(maxVisitors) || isNaN(expectedVisitors) || isNaN(eventType)) {
+    alert('Bitte alle Pflichtfelder korrekt ausfüllen.');
+    return;
+  }
+
+  function berechneBesucherPunkte(anzahl) {
+    if (anzahl <= 500) return 1;
+    if (anzahl <= 1000) return 2;
+    if (anzahl <= 1500) return 3;
+    if (anzahl <= 3000) return 4;
+    if (anzahl <= 6000) return 5;
+    if (anzahl <= 10000) return 6;
+    return 7;
+  }
+
+  let punkteMax = berechneBesucherPunkte(maxVisitors);
+  let punkteErwartet = berechneBesucherPunkte(expectedVisitors);
+  let punkte = (punkteMax + punkteErwartet) * eventType;
+  let vipPunkte = Math.min(Math.floor(vipCount / 5) * 10, 30);
+  let gesamtPunkte = punkte + vipPunkte + violence;
+
+  const helferStaffelung = [
+    { max: 2.0, wert: 2 },
+    { max: 4.0, wert: 3 },
+    { max: 13.5, wert: 5 },
+    { max: 22.0, wert: 10 },
+    { max: 40.0, wert: 20 },
+    { max: 60.0, wert: 30 },
+    { max: 80.0, wert: 40 },
+    { max: 100.0, wert: 80 },
+    { max: 110.0, wert: 100 },
+    { max: 120.0, wert: 120 },
+    { max: 140.0, wert: 160 }
+  ];
+
+  const ktwStaffelung = [
+    { max: 4.0, wert: 0 },
+    { max: 13.0, wert: 1 },
+    { max: 25.0, wert: 2 },
+    { max: 40.0, wert: 3 },
+    { max: 60.0, wert: 4 },
+    { max: 80.0, wert: 5 },
+    { max: 100.0, wert: 6 },
+    { max: 110.0, wert: 7 },
+    { max: 120.0, wert: 8 },
+    { max: 140.0, wert: 10 }
+  ];
+
+  const rtwStaffelung = [
+    { max: 6.0, wert: 0 },
+    { max: 25.5, wert: 1 },
+    { max: 45.5, wert: 2 },
+    { max: 60.5, wert: 3 },
+    { max: 75.5, wert: 4 },
+    { max: 100.0, wert: 5 },
+    { max: 120.0, wert: 6 },
+    { max: 9999, wert: 7 }
+  ];
+
+  const helfer = helferStaffelung.find(x => gesamtPunkte <= x.max)?.wert || 160;
+  const ktw = gesamtPunkte < 0.1 ? 0 : (ktwStaffelung.find(x => gesamtPunkte <= x.max)?.wert ?? 10);
+  const rtw = gesamtPunkte < 0.1 ? 0 : (rtwStaffelung.find(x => gesamtPunkte <= x.max)?.wert ?? 7);
+
+  let emojiOutput = `👨‍⚕️ Helfer: ${helfer} | 🚐 KTW: ${ktw} | 🚑 RTW: ${rtw}`;
+  let textOutput = `Die Berechnung hat ergeben, dass für diese Veranstaltung ${helfer} qualifizierte Helfer:innen, ${ktw} Krankentransportwagen (KTW) und ${rtw} Rettungswagen (RTW) erforderlich sind. Diese Berechnung ist ohne Gewähr. Stand 07/2025.`;
+
+  let risikoStyle = { background: '#ecf7ed', border: '#2ecc71', text: '#2d572c', titel: 'Geringes Risiko' };
+  if (rtw >= 1) {
+    risikoStyle = { background: '#fdecea', border: '#e74c3c', text: '#c0392b', titel: 'Hohes Risiko' };
+  } else if (helfer >= 3) {
+    risikoStyle = { background: '#fff6e5', border: '#f39c12', text: '#e67e22', titel: 'Mittleres Risiko' };
+  }
+
+  const resultDiv = document.getElementById('result');
+  resultDiv.style.backgroundColor = risikoStyle.background;
+  resultDiv.style.borderLeft = '5px solid ' + risikoStyle.border;
+  resultDiv.style.color = risikoStyle.text;
+  resultDiv.innerHTML = `
+    <strong>${risikoStyle.titel}</strong><br>
+    <strong>Gesamtgefahrneigung:</strong> ${gesamtPunkte.toFixed(1)} Punkte<br><br>
+    ${emojiOutput}<br><br>
+    ${textOutput}
+  `;
+}
+</script>
 </body>
 </html>
